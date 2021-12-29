@@ -17,16 +17,38 @@ global {
 	}
 }
 
-species fire {
+species waterZone{
+	init {
+		grille place <- one_of(grille);
+		location <- place.location;
+	}
+	aspect base {
+	  draw square(4) color: #blue border: #black;		
+	}
+}
+
+species fire skills: [moving] control:simple_bdi{
 	
+	aspect base {
+	  draw file("../includes/Fire.png") size: 5;
+	}
 }
 
 species truck skills: [moving] control:simple_bdi{
 	int water;
+	aspect base {
+		draw triangle(2) color:color rotate: 90 + heading;	
+		draw circle(15) color: color ;	
+	}
 }
 
 species drone skills: [moving] control:simple_bdi{
 	int water;
+	
+	aspect base {
+		draw triangle(1) color:color rotate: 90 + heading;	
+		draw circle(30) color: color ;	
+	}
 }
 
 grid grille width: 25 height: 25 neighbors:4 {
