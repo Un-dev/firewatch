@@ -12,7 +12,10 @@ global {
 	int nbtruck;
 	int nbdrones;
 	init {
-		create fire number:1;
+		create fire number:1{
+			place <- one_of(grille);
+			self.location <- place.location;	
+		}
 		create waterZone number:1;
 	}
 	reflex stop when:length(fire)=0{
@@ -30,35 +33,31 @@ species waterZone{
 	}
 }
 
-//species vegetation {
-//	int pv <- 5;
-//	init {
-//		grille place <- one_of(grille);
-//		location <- place.location;
-//	}
-//	aspect base{
-//		draw square(4) color: #green border: #black;
-//	}
-//}
 
 species fire skills: [moving] control:simple_bdi{
 	float size <-1.0;
-	grille place <- one_of(grille);
-	
-	init{
-		location <- place.location;
-	}
+	grille place;
 	
 	aspect base {
 	  draw file("../includes/Fire.png") size: 5;
 	}
 	
 	reflex burn when: place.pv > 0 { 
-	//TO DO : add fire intensity 	
-    place.pv <- place.pv - 0.1 ;
+		//TO DO : add fire intensity 	
+    	place.pv <- place.pv - 0.1 ;
     }
+    
     reflex die when: place.pv <= 0{
     	do die;
+    }
+    
+    reflex propagation when: place.pv > 0 {
+    	grille neighbour_place <- one_of (place.neighbors);
+		create fire number:1{
+			place <- neighbour_place;
+			location <- place.location;
+		}
+    
     }
 }
 
@@ -83,6 +82,7 @@ grid grille width: 25 height: 25 neighbors:4 {
 	float pv <- 1.0;
 	rgb color <- rgb(int(255 * (1 - pv)), 255, int(255 * (1 - pv)))
 	update: rgb(0, int(255 *pv), 0) ;
+	list<grille> neighbors  <- (self neighbors_at 1);
 	
 }
 
