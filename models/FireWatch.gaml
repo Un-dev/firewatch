@@ -13,6 +13,8 @@ global {
 	int nbdrones;
 	init {
 		create fire number:1;
+		create waterZone number:1;
+		create vegetation number:500;
 	}
 	reflex stop when:length(fire)=0{
 		do pause;
@@ -26,6 +28,17 @@ species waterZone{
 	}
 	aspect base {
 	  draw square(4) color: #blue border: #black;		
+	}
+}
+
+species vegetation {
+	int pv <- 5;
+	init {
+		grille place <- one_of(grille);
+		location <- place.location;
+	}
+	aspect base{
+		draw square(4) color: #green border: #black;
 	}
 }
 
@@ -60,7 +73,7 @@ species drone skills: [moving] control:simple_bdi{
 }
 
 grid grille width: 25 height: 25 neighbors:4 {
-	rgb color <- #green;
+	rgb color <- #white;
 }
 
 experiment FireWatch type: gui {
@@ -68,6 +81,9 @@ experiment FireWatch type: gui {
 	output {
 		display view {
 			grid grille lines: #darkgreen;
+			
+			species waterZone aspect:base;
+			species vegetation aspect:base;
 			species fire aspect:base;
 		}
 	}
