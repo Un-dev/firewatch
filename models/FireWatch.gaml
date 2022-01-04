@@ -14,7 +14,6 @@ global {
 	init {
 		create fire number:1;
 		create waterZone number:1;
-		create vegetation number:500;
 	}
 	reflex stop when:length(fire)=0{
 		do pause;
@@ -31,28 +30,36 @@ species waterZone{
 	}
 }
 
-species vegetation {
-	int pv <- 5;
-	init {
-		grille place <- one_of(grille);
-		location <- place.location;
-	}
-	aspect base{
-		draw square(4) color: #green border: #black;
-	}
-}
+//species vegetation {
+//	int pv <- 5;
+//	init {
+//		grille place <- one_of(grille);
+//		location <- place.location;
+//	}
+//	aspect base{
+//		draw square(4) color: #green border: #black;
+//	}
+//}
 
 species fire skills: [moving] control:simple_bdi{
 	float size <-1.0;
+	grille place <- one_of(grille);
 	
 	init{
-		grille place <- one_of(grille);
 		location <- place.location;
 	}
 	
 	aspect base {
 	  draw file("../includes/Fire.png") size: 5;
 	}
+	
+	reflex burn when: place.pv > 0 { 
+	//TO DO : add fire intensity 	
+    place.pv <- place.pv - 0.1 ;
+    }
+    reflex die when: place.pv <= 0{
+    	do die;
+    }
 }
 
 species truck skills: [moving] control:simple_bdi{
@@ -73,7 +80,10 @@ species drone skills: [moving] control:simple_bdi{
 }
 
 grid grille width: 25 height: 25 neighbors:4 {
-	rgb color <- #white;
+	float pv <- 1.0;
+	rgb color <- rgb(int(255 * (1 - pv)), 255, int(255 * (1 - pv)))
+	update: rgb(0, int(255 *pv), 0) ;
+	
 }
 
 experiment FireWatch type: gui {
@@ -83,7 +93,6 @@ experiment FireWatch type: gui {
 			grid grille lines: #darkgreen;
 			
 			species waterZone aspect:base;
-			species vegetation aspect:base;
 			species fire aspect:base;
 		}
 	}
