@@ -11,7 +11,9 @@ model FireWatch
 global {
 	int nbtruck;
 	int nbdrones;
-
+	init {
+		create fire number:1;
+	}
 	reflex stop when:length(fire)=0{
 		do pause;
 	}
@@ -28,6 +30,12 @@ species waterZone{
 }
 
 species fire skills: [moving] control:simple_bdi{
+	float size <-1.0;
+	
+	init{
+		grille place <- one_of(grille);
+		location <- place.location;
+	}
 	
 	aspect base {
 	  draw file("../includes/Fire.png") size: 5;
@@ -60,6 +68,7 @@ experiment FireWatch type: gui {
 	output {
 		display view {
 			grid grille lines: #darkgreen;
+			species fire aspect:base;
 		}
 	}
 }
