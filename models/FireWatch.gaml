@@ -10,20 +10,37 @@ model FireWatch
 
 global {
 	int nbtruck;
-	int nbdrones;
+	int nbdrones <- 10;
+	waterZone the_water;
+	
 	init {
 		create fire number:1{
 			place <- one_of(grille);
 			self.location <- place.location;	
 		}
-		create waterZone number:1;
+		create waterZone{
+			the_water <- self; 
+		}
+		create drone number:nbdrones{
+			place <- one_of(grille);
+			self.location <- place.location;	
+		}
+		
 	}
 	reflex stop when:length(fire)=0{
 		do pause;
 	}
+	
+	
+	//possible predicate concerning drones
+	predicate find_water <- new_predicate("find water") ;
+	predicate go_to_fire <- new_predicate("go to fire") ;
+	
 }
 
+
 species waterZone{
+	
 	init {
 		grille place <- one_of(grille);
 		location <- place.location;
@@ -32,7 +49,6 @@ species waterZone{
 	  draw square(4) color: #blue border: #black;		
 	}
 }
-
 
 species fire skills: [moving] control:simple_bdi{
 	float size <-1.0;
@@ -61,6 +77,40 @@ species fire skills: [moving] control:simple_bdi{
     }
 }
 
+
+species drone skills: [moving] control:simple_bdi{
+	int water <- 0;
+	rgb color <- #black;
+	float size <-1.0;
+	grille place;
+	
+	aspect base {
+		draw triangle(3) color:color rotate: 90 + heading;	
+	}
+	
+	init {
+        do add_desire(find_water);
+    }
+    
+    plan return_to_water intention: find_water when: water <= 0{
+        do goto target: the_water ;
+        if (the_water.location = location)  {
+            do remove_belief(find_water);
+            do remove_intention(find_water, true);
+            water <- 1;
+        }
+    }
+    plan put_out_the_fire intention: find_water when: water >= 1{
+        do goto target: the_water ;
+        if (the_water.location = location)  {
+            do remove_belief(find_water);
+            do remove_intention(find_water, true);
+            water <- 1;
+        }
+    }
+    
+}
+
 species truck skills: [moving] control:simple_bdi{
 	int water;
 	aspect base {
@@ -69,14 +119,7 @@ species truck skills: [moving] control:simple_bdi{
 	}
 }
 
-species drone skills: [moving] control:simple_bdi{
-	int water;
-	
-	aspect base {
-		draw triangle(1) color:color rotate: 90 + heading;	
-		draw circle(30) color: color ;	
-	}
-}
+
 
 grid grille width: 25 height: 25 neighbors:4 {
 	float pv <- 1.0;
@@ -94,6 +137,7 @@ experiment FireWatch type: gui {
 			
 			species waterZone aspect:base;
 			species fire aspect:base;
+			species drone aspect:base;
 		}
 	}
 }
