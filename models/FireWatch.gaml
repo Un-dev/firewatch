@@ -95,7 +95,7 @@ species drone skills: [moving] control:simple_bdi{
 	float size <-1.0;
 	grille place;
 	float viewdist<-20000.0;
-	point target;
+	fire target;
 	grille targetgrid;
 	
 	aspect base {
@@ -122,10 +122,10 @@ species drone skills: [moving] control:simple_bdi{
 			do add_belief(need_water);
 			do remove_belief(has_water);
 		}
-		if target = nil or targetgrid.can_burn = false{
-			do remove_belief(has_target);
+		if target != nil{
+				do add_belief(has_target);
 		}else{
-			do add_belief(has_target);
+			do remove_belief(has_target);
 		}
 	}
     
@@ -136,6 +136,7 @@ species drone skills: [moving] control:simple_bdi{
 	}
     
     plan return_to_water intention: has_water priority:100{
+
         do goto target: the_water ;
         if (the_water.location = location)  {
             water <- 1;
@@ -143,12 +144,11 @@ species drone skills: [moving] control:simple_bdi{
     }
     
     plan choose_target intention: has_target priority: 95{
-    	list<point> fires <- get_beliefs(new_predicate("location_fire")) collect (point(get_predicate(mental_state (each)).values["location_value"]));
-		targetgrid <- grille first_with(target = each.location);
+    	list<fire> fires <- get_beliefs(new_predicate("location_fire")) collect (fire(get_predicate(mental_state (each)).values["location_value"]));
         if (empty(fires)) {
 			color <- #yellow;
 		} else {
-			target <- (fires with_min_of (each distance_to self)).location;
+			target <- (fires with_min_of (each distance_to self));
 		}	
     }
     
@@ -156,17 +156,21 @@ species drone skills: [moving] control:simple_bdi{
     
 		do goto target: target;
 		
-		if (target.location = location)  {
+		if(!dead(target)){
+			if (target.location = location)  {
             //do remove_intention(go_to_water, true);
 
-            fire current_fire <- fire first_with (target = each.location);
+            fire current_fire <- fire first_with (target = each);
             if current_fire != nil{
             	ask current_fire {do die;}
             	water <- 0;
+            	targetgrid.can_burn <- false;
 			}
  			do remove_belief(has_target);
             do remove_belief(extinguish_target);
         }
+		}
+		
 		
 		//do remove_intention(define_gold_target, true);
     }
