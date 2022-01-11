@@ -133,7 +133,28 @@ species drone skills: [moving] control:simple_bdi{
     }
     
     
+    plan put_out_the_fire intention: go_to_fire priority:90{
+    	list<point> fires <- get_beliefs(new_predicate("location_fire")) collect (point(get_predicate(mental_state (each)).values["location_value"]));
 
+        if (empty(fires)) {
+			color <- #yellow;
+		} else {
+			target <- (fires with_min_of (each distance_to self)).location;
+		}
+		
+		do goto target: target;
+		if (target.location = location)  {
+            //do remove_intention(go_to_water, true);
+            water <- 0;
+            fire current_fire <- fire first_with (target = each.location);
+            if current_fire != nil {
+            	ask current_fire {do die;}
+			}
+            do remove_belief(go_to_fire);
+        }
+		
+		//do remove_intention(define_gold_target, true);
+    }
     
 }
 
