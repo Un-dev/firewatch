@@ -35,11 +35,11 @@ global {
 	
 	
 	//possible predicate concerning drones
-	predicate go_to_water <- new_predicate("go_to water") ;
+	predicate need_water <- new_predicate("need water") ;
 	predicate go_to_fire <- new_predicate("go to fire") ;
 	predicate has_water <- new_predicate("has water") ;
-	predicate has_target <- new_predicate("has_target") ;
-	predicate current_target <- new_predicate("current_target") ;
+	predicate has_target <- new_predicate("has target") ;
+	predicate current_target <- new_predicate("current target") ;
 	
 	
 }
@@ -90,7 +90,7 @@ species fire skills: [moving] control:simple_bdi{
 
 
 species drone skills: [moving] control:simple_bdi{
-	int water <- 0;
+	int water;
 	rgb color <- #red;
 	float size <-1.0;
 	grille place;
@@ -105,8 +105,19 @@ species drone skills: [moving] control:simple_bdi{
 	}
 	
 	init {
-        do add_desire(go_to_water);
+		water <- 0;
     }
+    
+    perceive target:self {
+		if(water>0){
+			do add_belief(has_water);
+			do remove_belief(need_water);
+		}
+		if(water<=0){
+			do add_belief(need_water);
+			do remove_belief(has_water);
+		}
+	}
     
     //if the agent perceive a fire in its neighborhood, it adds a belief a belief concening its location and remove its wandering intention
 	perceive target:fire in:viewdist {
@@ -114,40 +125,15 @@ species drone skills: [moving] control:simple_bdi{
 		//ask myself {do remove_intention(wander, false);}
 	}
     
-    plan return_to_water intention: go_to_water when: water <= 0{
+    plan return_to_water intention: need_water priority:100{
         do goto target: the_water ;
         if (the_water.location = location)  {
-            do remove_belief(go_to_water);
-            do remove_intention(go_to_water, true);
             water <- 1;
-            do add_belief(has_water);
         }
     }
     
     
-    plan put_out_the_fire intention: go_to_fire when: water >= 1{
-    	list<point> fires <- get_beliefs(new_predicate("location_fire")) collect (point(get_predicate(mental_state (each)).values["location_value"]));
 
-        if (empty(fires)) {
-			color <- #yellow;
-		} else {
-			target <- (fires with_min_of (each distance_to self)).location;
-		}
-		
-		do goto target: target;
-		if (target.location = location)  {
-            //do remove_intention(go_to_water, true);
-            water <- 0;
-            fire current_fire <- fire first_with (target = each.location);
-            if current_fire != nil {
-            	ask current_fire {do die;}
-			}
-            do add_belief(go_to_water);
-            do remove_belief(go_to_fire);
-        }
-		
-		//do remove_intention(define_gold_target, true);
-    }
     
 }
 
