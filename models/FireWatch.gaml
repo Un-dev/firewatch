@@ -12,7 +12,7 @@ global {
 	int nbtruck;
 	int nbdrones <- 10;
 	waterZone the_water;
-	float droneSpeed <- 10.0 #km / #h;
+	float droneSpeed <- 3.0 #km / #h;
 	
 	init {
 		create fire number:1{
@@ -68,13 +68,15 @@ species fire skills: [moving] control:simple_bdi{
     }
     
     reflex die when: place.pv <= 0{
+    	place.can_burn <- false;
     	do die;
     }
     
     reflex propagation when: place.pv > 0 {
     	bool propagates <- rnd(0.01)/0.01 > 0.8 ? true : false;
-    	if propagates and place.pv < 0.6 {
-    		grille neighbour_place <- one_of (place.neighbors);
+    	grille neighbour_place <- one_of (place.neighbors);
+    	if propagates = true and place.pv < 0.6 and neighbour_place.can_burn = true {
+    		
 			create fire number:1{
 				place <- neighbour_place;
 				location <- place.location;
@@ -137,6 +139,7 @@ species drone skills: [moving] control:simple_bdi{
             water <- 0;
             fire current_fire <- fire first_with (target = each.location);
             if current_fire != nil {
+            	current_fire.place.can_burn<-false;
 				ask current_fire {do die;}	
 			}
             do add_belief(find_water);
@@ -159,6 +162,7 @@ species truck skills: [moving] control:simple_bdi{
 
 grid grille width: 25 height: 25 neighbors:4 {
 	float pv <- 1.0;
+	bool can_burn <- true;
 	rgb color <- rgb(int(255 * (1 - pv)), 255, int(255 * (1 - pv)))
 	update: rgb(0, int(255 *pv), 0) ;
 	list<grille> neighbors  <- (self neighbors_at 1);
