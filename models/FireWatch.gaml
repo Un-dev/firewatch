@@ -60,7 +60,7 @@ species fire skills: [moving] control:simple_bdi{
 	
 	reflex burn when: place.pv > 0 { 
 		//TO DO : add fire intensity 	
-    	place.pv <- place.pv - 0.1 ;
+    	place.pv <- place.pv - 0.005 ;
     }
     
     reflex die when: place.pv <= 0{
@@ -68,10 +68,13 @@ species fire skills: [moving] control:simple_bdi{
     }
     
     reflex propagation when: place.pv > 0 {
-    	grille neighbour_place <- one_of (place.neighbors);
-		create fire number:1{
-			place <- neighbour_place;
-			location <- place.location;
+    	bool propagates <- rnd(0.01)/0.01 > 0.8 ? true : false;
+    	if propagates and place.pv < 0.6 {
+    		grille neighbour_place <- one_of (place.neighbors);
+			create fire number:1{
+				place <- neighbour_place;
+				location <- place.location;
+			}
 		}
     
     }
