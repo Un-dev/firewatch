@@ -132,18 +132,17 @@ species fireArea control:simple_bdi{
     }
     
 	reflex propagation when: place.pv > 0{
-		//randomness decides whether the fire propagates, TODO define wind to determine random propagation
     	bool propagates <- rnd(0.01)/0.01 > 0.8 ? true : false;
-    	//grille neighbour_place <- any(one_of (place.neighbors) where (each.can_burn = true)) ;
-    	list burnable_neighbors <- (place.neighbors where (each.can_burn = true));
-    	grille neighbour_place <- one_of(burnable_neighbors);
+    	grille neighbour_place <- one_of (place.neighbors);
     	if propagates = true and place.pv < 0.6{
     		
     		grille new_place <- neighbour_place;
-			create fireArea number:1{
-				place <- new_place;
-				location <- place.location;
-			}
+    		if new_place.can_burn = true{
+    			create fireArea number:1{
+					place <- new_place;
+					location <- place.location;
+				}
+    		}
 
 		}
     }
