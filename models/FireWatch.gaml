@@ -10,7 +10,7 @@ model FireWatch
 
 global {
 	int nbtruck;
-	int nbdrones <- 10;
+	int nbdrones <- 1;
 	waterZone the_water;
 	float droneSpeed <- 3.0 #km / #h;
 	
@@ -35,12 +35,12 @@ global {
 	
 	
 	//possible predicate concerning drones
-	predicate go_to_water <- new_predicate("go_to water") ;
+	predicate need_water <- new_predicate("need water") ;
 	predicate go_to_fire <- new_predicate("go to fire") ;
 	predicate has_water <- new_predicate("has water") ;
-	predicate has_target <- new_predicate("has_target") ;
-	predicate current_target <- new_predicate("current_target") ;
-	
+	predicate has_target <- new_predicate("has target") ;
+	predicate current_target <- new_predicate("current target") ;
+	predicate extinguish_target <- new_predicate("extinguish target") ;
 	
 }
 
@@ -90,23 +90,44 @@ species fire skills: [moving] control:simple_bdi{
 
 
 species drone skills: [moving] control:simple_bdi{
-	int water <- 0;
+	int water;
 	rgb color <- #red;
 	float size <-1.0;
 	grille place;
 	float viewdist<-20000.0;
-	point target;
-
-	
-	rule belief: has_water new_desire: go_to_fire strength:100;
+	fire target;
+	grille targetgrid;
 	
 	aspect base {
 		draw triangle(3) color:color rotate: 90 + heading;	
+		draw ("water:" + water ) color:#black size:5;
+		draw ("B:" + desire_base) color:#black size:5; 
 	}
 	
 	init {
-        do add_desire(go_to_water);
+		water <- 0;
+		do add_belief(need_water);
     }
+    
+    rule belief: need_water new_desire: has_water strength: 2.0;
+    rule belief: has_water new_desire: has_target strength: 3.0;
+    rule belief: has_target new_desire: extinguish_target strength: 4.0;
+    
+    perceive target:self {
+		if(water>0){
+			do add_belief(has_water);
+			do remove_belief(need_water);
+		}
+		if(water<=0){
+			do add_belief(need_water);
+			do remove_belief(has_water);
+		}
+		if target != nil{
+				do add_belief(has_target);
+		}else{
+			do remove_belief(has_target);
+		}
+	}
     
     //if the agent perceive a fire in its neighborhood, it adds a belief a belief concening its location and remove its wandering intention
 	perceive target:fire in:viewdist {
@@ -114,37 +135,42 @@ species drone skills: [moving] control:simple_bdi{
 		//ask myself {do remove_intention(wander, false);}
 	}
     
-    plan return_to_water intention: go_to_water when: water <= 0{
+    plan return_to_water intention: has_water priority:100{
+
         do goto target: the_water ;
         if (the_water.location = location)  {
-            do remove_belief(go_to_water);
-            do remove_intention(go_to_water, true);
             water <- 1;
-            do add_belief(has_water);
         }
     }
     
-    
-    plan put_out_the_fire intention: go_to_fire when: water >= 1{
-    	list<point> fires <- get_beliefs(new_predicate("location_fire")) collect (point(get_predicate(mental_state (each)).values["location_value"]));
-
+    plan choose_target intention: has_target priority: 95{
+    	list<fire> fires <- get_beliefs(new_predicate("location_fire")) collect (fire(get_predicate(mental_state (each)).values["location_value"]));
         if (empty(fires)) {
 			color <- #yellow;
 		} else {
-			target <- (fires with_min_of (each distance_to self)).location;
+			target <- (fires with_min_of (each distance_to self));
+		}	
+    }
+    
+    plan put_out_the_fire intention: extinguish_target priority:90{
+    
+		do goto target: target;
+		
+		if(!dead(target)){
+			if (target.location = location)  {
+            //do remove_intention(go_to_water, true);
+
+            fire current_fire <- fire first_with (target = each);
+            if current_fire != nil{
+            	ask current_fire {do die;}
+            	water <- 0;
+            	targetgrid.can_burn <- false;
+			}
+ 			do remove_belief(has_target);
+            do remove_belief(extinguish_target);
+        }
 		}
 		
-		do goto target: target;
-		if (target.location = location)  {
-            //do remove_intention(go_to_water, true);
-            water <- 0;
-            fire current_fire <- fire first_with (target = each.location);
-            if current_fire != nil {
-            	ask current_fire {do die;}
-			}
-            do add_belief(go_to_water);
-            do remove_belief(go_to_fire);
-        }
 		
 		//do remove_intention(define_gold_target, true);
     }
