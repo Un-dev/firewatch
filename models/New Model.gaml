@@ -68,9 +68,11 @@ species drone skills: [moving] control: simple_bdi{
 				if (self distance_to target_fire <= 1) {
 					waterValue <- waterValue - 1.0;
 					 current_fire.size <-  current_fire.size - 1;
-					 current_fire.pv <- 0;
 					 if ( current_fire.size <= 0) {
-						ask  current_fire {do die;}
+						ask  current_fire {
+							current_fire.place.can_burn <- false;
+							do die;
+						}
 						do remove_belief(get_predicate(get_current_intention()));
 						do remove_intention(get_predicate(get_current_intention()), true);
 						do add_desire(patrol_desire,1.0);
@@ -106,13 +108,13 @@ species drone skills: [moving] control: simple_bdi{
 	
 	aspect base {
 		draw triangle(3) color:color rotate: 90 + heading;
+		
 	}
 }
 
 species fireArea control:simple_bdi{
 	float size <-1.0;
 	grille place;
-	int pv <- 1;
 	
 	init{
 		place <- one_of(grille);
@@ -120,7 +122,7 @@ species fireArea control:simple_bdi{
 	}
 	
 	reflex die when: place.pv <= 0{
-		pv <- 0;
+		self.place.can_burn <- false;
     	do die;
     }
     
@@ -129,20 +131,25 @@ species fireArea control:simple_bdi{
     	place.pv <- place.pv - 0.005 ;
     }
     
-	reflex propagation when: place.pv > 0 {
+	reflex propagation when: place.pv > 0{
     	bool propagates <- rnd(0.01)/0.01 > 0.8 ? true : false;
     	grille neighbour_place <- one_of (place.neighbors);
-    	if propagates = true and place.pv < 0.6 and self.pv > 0 {
+    	if propagates = true and place.pv < 0.6{
     		
-			create fireArea number:1{
-				place <- neighbour_place;
-				location <- place.location;
-			}
+    		grille new_place <- neighbour_place;
+    		if new_place.can_burn = true{
+    			create fireArea number:1{
+					place <- new_place;
+					location <- place.location;
+				}
+    		}
+
 		}
     }
     
 	aspect base {
 	  draw file("../includes/Fire.png") size: 5;
+	  draw "B="+self.place.can_burn at: location color:#white ;
 	}
 }
 
@@ -158,6 +165,7 @@ species waterArea{
 
 grid grille width: 25 height: 25 neighbors:4 {
 	float pv <- 1.0;
+	bool can_burn <- true;
 	rgb color <- rgb(int(255 * (1 - pv)), 255, int(255 * (1 - pv)))
 	update: rgb(0, int(255 *pv), 0) ;
 }
