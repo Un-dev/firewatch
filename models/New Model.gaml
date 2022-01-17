@@ -124,6 +124,7 @@ species fireArea control:simple_bdi{
 	init{
 		place <- one_of(grille);
 		location <- place.location;
+		place.can_burn <- false;
 	}
 	
 	reflex die when: place.pv <= 0{
@@ -146,6 +147,7 @@ species fireArea control:simple_bdi{
     			create fireArea number:1{
 					place <- new_place;
 					location <- place.location;
+					place.can_burn <- false;
 				}
     		}
 
