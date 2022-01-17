@@ -140,17 +140,18 @@ species fireArea control:simple_bdi{
     	if propagates = true and place.pv < 0.6{
     		
     		grille new_place <- neighbour_place;
-			create fireArea number:1{
-				place <- new_place;
-				location <- place.location;
-			}
-
+    			create fireArea number:1{
+					place <- new_place;
+					location <- place.location;
+					place.can_burn <- false;
+    		}
 		}
     }
     
 	aspect base {
 	  draw file("../includes/Fire.png") size: 5;
-	  draw "B="+self.place.can_burn at: location color:#white ;
+	  draw "B="+self.place.can_burn color:#white size:displatTextSize at: location;
+	  draw "S="+self.size color:#white size:displatTextSize at:{location.x,location.y+displatTextSize/2};
 	}
 }
 
