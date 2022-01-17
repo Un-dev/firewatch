@@ -141,6 +141,7 @@ species fireArea control:simple_bdi{
     			create fireArea number:1{
 					place <- new_place;
 					location <- place.location;
+					place.can_burn <- false;
 				}
     		}
 
@@ -149,7 +150,8 @@ species fireArea control:simple_bdi{
     
 	aspect base {
 	  draw file("../includes/Fire.png") size: 5;
-	  draw "B="+self.place.can_burn at: location color:#white ;
+	  draw "B="+self.place.can_burn color:#white size:displatTextSize at: location;
+	  draw "S="+self.size color:#white size:displatTextSize at:{location.x,location.y+displatTextSize/2};
 	}
 }
 
