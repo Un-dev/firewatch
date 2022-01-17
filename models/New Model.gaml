@@ -48,7 +48,7 @@ species drone skills: [moving] control: simple_bdi{
 		}
 	}
 	
-	perceive target:fireArea in: 20000{ 
+	perceive target:fireArea in: 15{ 
 		focus id:"fireLocation" var:location strength:10.0; 
 		ask myself{
 			do remove_intention(patrol_desire, true);
