@@ -36,7 +36,7 @@ species drone skills: [moving] control: simple_bdi{
 	init {
 		waterValue <-0.0;
 		location<-place.location;
-		do add_desire(patrol_desire );
+		do add_desire(patrol_desire);
 	}
 	
 	//functions that updates drone beliefs, linked to water needs
@@ -45,7 +45,7 @@ species drone skills: [moving] control: simple_bdi{
 			do add_belief(has_water);
 			do remove_belief(needs_water);
 		}
-		if(waterValue<=0){
+		if(waterValue<=0 and fireLocation){
 			do add_belief(needs_water);
 			do remove_belief(has_water);
 		}
