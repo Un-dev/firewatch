@@ -10,18 +10,18 @@ model NewModel
 
 global {
 	int displatTextSize <-4;
-	
+	//defining predicates 
 	predicate patrol_desire <- new_predicate("patrol");
 	predicate has_water <- new_predicate("has water",true);
 	predicate needs_water <- new_predicate("has water", false) ;
 	string fireLocation <- "fireLocation";
-	
+	//iniatilizing agents
 	init {
 		create fireArea number:1;
 		create waterArea number:1;
 		create drone number: 2;
 	}
-	
+	//stops simulation when all fires are extinguished
 	reflex stop when: length(fireArea) = 0 {
 		do pause;
 	}
@@ -30,13 +30,16 @@ global {
 species drone skills: [moving] control: simple_bdi{
 	float waterValue;
 	grille place <- one_of(grille);
-	
+	//here we consider that drone will have no water until they find a fire, for speed and energy issues
+	//todo slow down drone when it has watervalue > 0
+	//add battery value
 	init {
 		waterValue <-0.0;
 		location<-place.location;
 		do add_desire(patrol_desire );
 	}
 	
+	//functions that updates drone beliefs, linked to water needs
 	perceive target:self {
 		if(waterValue>0){
 			do add_belief(has_water);
@@ -48,7 +51,9 @@ species drone skills: [moving] control: simple_bdi{
 		}
 	}
 	
-	perceive target:fireArea in: 20000{ 
+	//functions that 
+	//todo: prevent drone from getting water if 
+	perceive target:fireArea in: 15{ 
 		focus id:"fireLocation" var:location strength:10.0; 
 		ask myself{
 			do remove_intention(patrol_desire, true);
