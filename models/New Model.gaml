@@ -25,7 +25,7 @@ global {
 	init {
 		create fireArea number:1;
 		create waterArea number:1;
-		create drone number: 3;
+		create drone number: 5;
 	}
 	//stops simulation when all fires are extinguished
 	reflex stop when: length(fireArea) = 0 {
@@ -61,15 +61,23 @@ species drone skills: [moving] control: simple_bdi{
 	}
 	
 	
-	//functions that 
+	//functions that perceive fires
 	//todo: prevent drone from getting water if 
 	perceive target:fireArea in: 15{ 
-		focus id:fireLocation var:location strength:10.0; 
-		ask myself{
+		if (fireArea != nil){
+			focus id:fireLocation var:location strength:10.0; 
+			ask myself{
 			do add_desire(predicate:share_information);
 			do remove_intention(patrol_desire, true);
-		} 
+			} 
+		}else{
+			remove fireArea from: get_beliefs_with_name(fireLocation);
+		}
+
+		
 	}
+	
+	
 	
 	//
 	perceive target: drone in: communication_dist {
@@ -77,13 +85,13 @@ species drone skills: [moving] control: simple_bdi{
     }
 	
 	plan patrolling intention:patrol_desire{
-		do wander amplitude: 30.0 speed: 2.0;
+		do wander amplitude: 10.0 speed: 2.0;
 	}
 	
 	
 	//The plan that is executed when the agent got the intention of extinguish a fire.
 	plan stopFire intention: fire_location priority:5{
-	point 	target_fire <- point(get_predicate(get_current_intention()).values["location_value"]);
+	point target_fire <- point(get_predicate(get_current_intention()).values["location_value"]);
 		if(waterValue>0){
 			fireArea current_fire <- fireArea first_with (each.location = target_fire);
 			if (current_fire != nil){
@@ -97,7 +105,9 @@ species drone skills: [moving] control: simple_bdi{
 						}
 						do remove_belief(get_predicate(get_current_intention()));
 						do remove_intention(get_predicate(get_current_intention()), true);
-						do add_desire(patrol_desire,1.0);
+						if (length(get_beliefs_with_name(fireLocation)) <= 0){
+							do add_desire(patrol_desire,1.0);
+						}
 					}
 					}else {
 						do goto(target: target_fire);
@@ -105,7 +115,9 @@ species drone skills: [moving] control: simple_bdi{
 				}else{
 					do remove_belief(get_predicate(get_current_intention()));
 					do remove_intention(get_predicate(get_current_intention()), true);
-					do add_desire(patrol_desire,1.0);
+					if (length(get_beliefs_with_name(fireLocation)) <= 0){
+							do add_desire(patrol_desire,1.0);
+					}
 				}
 			
 			
@@ -119,7 +131,7 @@ species drone skills: [moving] control: simple_bdi{
     plan gotoTakeWater intention: has_water priority:2 {
     	waterArea wa <- first(waterArea);
     	list<grille> voisins <-  (grille(location) neighbors_at (1)) + grille(location);
-			path cheminSuivi <-  goto(wa);
+			path cheminSuivi <-  goto(target: wa, speed: 2.0) ;
     	if (self distance_to wa <= 1) {
     		waterValue <- waterValue + 2.0;
 		}
@@ -132,8 +144,9 @@ species drone skills: [moving] control: simple_bdi{
     	loop known_fire_at_location over: get_beliefs_with_name(fireLocation) {
         	ask my_friends {
         		do remove_intention(patrol_desire, true);
-        		do add_directly_belief(known_fire_at_location);
-        	}
+        		do add_directly_belief(known_fire_at_location);	
+        	}        		
+       
     	}
     		do remove_intention(share_information, true); 
     }
@@ -186,7 +199,7 @@ species fireArea control:simple_bdi{
     }
     
 	aspect base {
-	  draw file("../includes/Fire.png") size: 5;
+	  draw file("../includes/Fire.png") size: 2;
 	  // for debug purpose
 	  // draw "B="+self.place.can_burn at: location color:#white ;
 	}
@@ -202,7 +215,7 @@ species waterArea{
 	}
 }
 
-grid grille width: 25 height: 25 neighbors:4 {
+grid grille width: 100 height: 100 neighbors:8 {
 	float pv <- 1.0;
 	bool can_burn <- true;
 	rgb color <- rgb(int(255 * (1 - pv)), 255, int(255 * (1 - pv)))
