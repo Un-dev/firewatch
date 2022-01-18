@@ -127,16 +127,15 @@ species drone skills: [moving] control: simple_bdi{
         
     list<drone> my_friends;
     
-    plan share_information_to_friends intention: share_information instantaneous: true{
-    
-    my_friends <- list<drone>((social_link_base where (each.liking > 0)) collect each.agent);
-    loop known_fire_at_location over: get_beliefs_with_name(fireLocation) {
-        ask my_friends {
-        	do remove_intention(patrol_desire, true);
-        	do add_belief(known_fire_at_location);
-        }
-    }
-    	do remove_intention(share_information, true); 
+    plan share_information_to_friends intention: share_information instantaneous: true{    
+    	my_friends <- list<drone>((social_link_base where (each.liking > 0)) collect each.agent);
+    	loop known_fire_at_location over: get_beliefs_with_name(fireLocation) {
+        	ask my_friends {
+        		do remove_intention(patrol_desire, true);
+        		do add_directly_belief(known_fire_at_location);
+        	}
+    	}
+    		do remove_intention(share_information, true); 
     }
 
 	
@@ -145,7 +144,7 @@ species drone skills: [moving] control: simple_bdi{
 	
 	aspect base {
 		draw triangle(3) color:color rotate: 90 + heading;
-		draw "B="+my_friends at: location color:#white ;
+		draw "B="+length(get_beliefs_with_name(fireLocation)) at: location color:#white ;
 	}
 }
 
