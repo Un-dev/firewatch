@@ -14,12 +14,18 @@ global {
 	predicate patrol_desire <- new_predicate("patrol");
 	predicate has_water <- new_predicate("has water",true);
 	predicate needs_water <- new_predicate("has water", false) ;
+	predicate share_information <- new_predicate("share information") ;
+	predicate fire_location <- new_predicate(fireLocation) ;
 	string fireLocation <- "fireLocation";
+	
+	//initializing global variable
+	//We consider communication dist as infinite
+	float communication_dist <- 20000.0;
 	//iniatilizing agents
 	init {
 		create fireArea number:1;
 		create waterArea number:1;
-		create drone number: 2;
+		create drone number: 3;
 	}
 	//stops simulation when all fires are extinguished
 	reflex stop when: length(fireArea) = 0 {
@@ -30,6 +36,9 @@ global {
 species drone skills: [moving] control: simple_bdi{
 	float waterValue;
 	grille place <- one_of(grille);
+	
+	
+	
 	//here we consider that drone will have no water until they find a fire, for speed and energy issues
 	//todo slow down drone when it has watervalue > 0
 	//add battery value
@@ -51,22 +60,30 @@ species drone skills: [moving] control: simple_bdi{
 		}
 	}
 	
+	
 	//functions that 
 	//todo: prevent drone from getting water if 
 	perceive target:fireArea in: 15{ 
-		focus id:"fireLocation" var:location strength:10.0; 
+		focus id:fireLocation var:location strength:10.0; 
 		ask myself{
+			do add_desire(predicate:share_information);
 			do remove_intention(patrol_desire, true);
 		} 
 	}
+	
+	//
+	perceive target: drone in: communication_dist {
+    	socialize liking: 1;
+    }
 	
 	plan patrolling intention:patrol_desire{
 		do wander amplitude: 30.0 speed: 2.0;
 	}
 	
-		//The plan that is executed when the agent got the intention of extinguish a fire.
-	plan stopFire intention: new_predicate(fireLocation) priority:5{
-		point target_fire <- point(get_predicate(get_current_intention()).values["location_value"]);
+	
+	//The plan that is executed when the agent got the intention of extinguish a fire.
+	plan stopFire intention: fire_location priority:5{
+	point 	target_fire <- point(get_predicate(get_current_intention()).values["location_value"]);
 		if(waterValue>0){
 			fireArea current_fire <- fireArea first_with (each.location = target_fire);
 			if (current_fire != nil){
@@ -107,13 +124,28 @@ species drone skills: [moving] control: simple_bdi{
     		waterValue <- waterValue + 2.0;
 		}
     }
+        
+    list<drone> my_friends;
+    
+    plan share_information_to_friends intention: share_information instantaneous: true{
+    
+    my_friends <- list<drone>((social_link_base where (each.liking > 0)) collect each.agent);
+    loop known_fire_at_location over: get_beliefs_with_name(fireLocation) {
+        ask my_friends {
+        	do remove_intention(patrol_desire, true);
+        	do add_belief(known_fire_at_location);
+        }
+    }
+    	do remove_intention(share_information, true); 
+    }
+
 	
 	rule belief: new_predicate(fireLocation) new_desire: get_predicate(get_belief_with_name(fireLocation));
 	rule belief: needs_water new_desire: has_water strength: 10.0;
 	
 	aspect base {
 		draw triangle(3) color:color rotate: 90 + heading;
-		
+		draw "B="+my_friends at: location color:#white ;
 	}
 }
 
@@ -156,7 +188,8 @@ species fireArea control:simple_bdi{
     
 	aspect base {
 	  draw file("../includes/Fire.png") size: 5;
-	  draw "B="+self.place.can_burn at: location color:#white ;
+	  // for debug purpose
+	  // draw "B="+self.place.can_burn at: location color:#white ;
 	}
 }
 
