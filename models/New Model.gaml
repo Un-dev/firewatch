@@ -21,6 +21,11 @@ global {
 	//initializing global variable
 	//We consider communication dist as infinite
 	float communication_dist <- 20000.0;
+	
+	//Drone's speed is different if they carri water or if they are empty
+	float empty_drone_speed <- 2.0;
+	float full_drone_speed <- 1.0;
+	
 	//iniatilizing agents
 	init {
 		create fireArea number:1;
@@ -63,29 +68,25 @@ species drone skills: [moving] control: simple_bdi{
 	
 	//functions that perceive fires
 	//todo: prevent drone from getting water if 
-	perceive target:fireArea in: 15{ 
+	perceive target:fireArea where place.can_burn in: 15{ 
 		if (fireArea != nil){
 			focus id:fireLocation var:location strength:10.0; 
 			ask myself{
-			do add_desire(predicate:share_information);
-			do remove_intention(patrol_desire, true);
-			} 
-		}else{
-			remove fireArea from: get_beliefs_with_name(fireLocation);
-		}
-
-		
+				do add_desire(predicate:share_information);
+				do remove_intention(patrol_desire, true);
+				}	 
+		}		
 	}
 	
 	
 	
-	//
+	//Drones like each other no matter what
 	perceive target: drone in: communication_dist {
     	socialize liking: 1;
     }
 	
 	plan patrolling intention:patrol_desire{
-		do wander amplitude: 10.0 speed: 2.0;
+		do wander amplitude: 10.0 speed: empty_drone_speed;
 	}
 	
 	
@@ -110,7 +111,7 @@ species drone skills: [moving] control: simple_bdi{
 						}
 					}
 					}else {
-						do goto(target: target_fire);
+						do goto(target: target_fire, speed:full_drone_speed);
 					}
 				}else{
 					do remove_belief(get_predicate(get_current_intention()));
@@ -131,15 +132,17 @@ species drone skills: [moving] control: simple_bdi{
     plan gotoTakeWater intention: has_water priority:2 {
     	waterArea wa <- first(waterArea);
     	list<grille> voisins <-  (grille(location) neighbors_at (1)) + grille(location);
-			path cheminSuivi <-  goto(target: wa, speed: 2.0) ;
+			path cheminSuivi <-  goto(target: wa, speed: empty_drone_speed) ;
     	if (self distance_to wa <= 1) {
     		waterValue <- waterValue + 2.0;
 		}
     }
-        
+     
+    //list all the drones in the simulation (we consider that they are all interconnected)   
     list<drone> my_friends;
     
-    plan share_information_to_friends intention: share_information instantaneous: true{    
+    //the plan that share the location of a fire when found by a drone
+    plan share_information_to_friends intention: share_information priority:1 instantaneous: true{    
     	my_friends <- list<drone>((social_link_base where (each.liking > 0)) collect each.agent);
     	loop known_fire_at_location over: get_beliefs_with_name(fireLocation) {
         	ask my_friends {
