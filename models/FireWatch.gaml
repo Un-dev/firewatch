@@ -1,12 +1,12 @@
 /**
-* Name: FireWatch
+* Name: NewModel
 * Based on the internal empty template. 
-* Author: Francois
+* Author: Flann
 * Tags: 
 */
 
 
-model FireWatch
+model Firewatch2
 
 global {
 	int displatTextSize <-4;
@@ -30,8 +30,7 @@ global {
 	init {
 		create fireArea number:1;
 		create waterArea number:1;
-		create drone number: 2;
-		create truck number: 2;
+		create drone number: 3;
 	}
 	//stops simulation when all fires are extinguished
 	reflex stop when: length(fireArea) = 0 {
@@ -39,19 +38,22 @@ global {
 	}
 }
 
-species truck skills: [moving] control: simple_bdi{
+species drone skills: [moving] control: simple_bdi{
 	float waterValue;
 	grille place <- one_of(grille);
 	
 	
 	
-	//here we consider that truck will start fully loaded in water, to be ready at any time
+	//here we consider that drone will have no water until they find a fire, for speed and energy issues
+	//todo slow down drone when it has watervalue > 0
+	//add battery value
 	init {
-		waterValue <-25.0;
+		waterValue <-0.0;
 		location<-place.location;
+		do add_desire(patrol_desire);
 	}
 	
-	//functions that updates trucks beliefs, linked to water needs
+	//functions that updates drone beliefs, linked to water needs
 	perceive target:self {
 		if(waterValue>0){
 			do add_belief(has_water);
@@ -66,33 +68,31 @@ species truck skills: [moving] control: simple_bdi{
 	
 	//functions that perceive fires
 	//todo: prevent drone from getting water if 
-	perceive target:fireArea where place.can_burn in: 5{ 
+	perceive target:fireArea where place.can_burn in: 15{ 
 		if (fireArea != nil){
 			focus id:fireLocation var:location strength:10.0; 
 			ask myself{
-				//do add_desire(predicate:share_information);
-				//do remove_intention(patrol_desire, true);
+				do add_desire(predicate:share_information);
+				do remove_intention(patrol_desire, true);
 				}	 
 		}		
 	}
 	
 	
 	
-	//trucks like drone no matter what
+	//Drones like each other no matter what
 	perceive target: drone in: communication_dist {
     	socialize liking: 1;
     }
 	
-	//truck don't patrol, they wait on drones information
-//	plan patrolling intention:patrol_desire{
-//		do wander amplitude: 10.0 speed: empty_drone_speed;
-//	}
+	plan patrolling intention:patrol_desire{
+		do wander amplitude: 10.0 speed: empty_drone_speed;
+	}
 	
 	
 	//The plan that is executed when the agent got the intention of extinguish a fire.
 	plan stopFire intention: fire_location priority:5{
-	if(point(get_predicate(get_current_intention())) != nil){
-		point target_fire <- point(get_predicate(get_current_intention()).values["location_value"]);
+	point target_fire <- point(get_predicate(get_current_intention()).values["location_value"]);
 		if(waterValue>0){
 			fireArea current_fire <- fireArea first_with (each.location = target_fire);
 			if (current_fire != nil){
@@ -126,8 +126,6 @@ species truck skills: [moving] control: simple_bdi{
 			do add_subintention(get_current_intention(),has_water,true);
 			do current_intention_on_hold();
 		}
-	}
-	
 	}  
 	
 	//The plan to take water when the agent get the desire of water.
@@ -140,154 +138,20 @@ species truck skills: [moving] control: simple_bdi{
 		}
     }
      
-     
     //list all the drones in the simulation (we consider that they are all interconnected)   
-//    list<drone> my_friends;
+    list<drone> my_friends;
     
     //the plan that share the location of a fire when found by a drone
-//    plan share_information_to_friends intention: share_information priority:1 instantaneous: true{    
-//    	my_friends <- list<drone>((social_link_base where (each.liking > 0)) collect each.agent);
-//    	loop known_fire_at_location over: get_beliefs_with_name(fireLocation) {
-//        	ask my_friends {
-//        		do remove_intention(patrol_desire, true);
-//        		do add_directly_belief(known_fire_at_location);	
-//        	}        		
-//       
-//    	}
-//    		do remove_intention(share_information, true); 
-//    }
-
-	
-	rule belief: new_predicate(fireLocation) new_desire: get_predicate(get_belief_with_name(fireLocation));
-	rule belief: needs_water new_desire: has_water strength: 10.0;
-	
-	aspect base {
-		draw square(3) color:color rotate: 90 + heading;
-		draw "B="+length(get_beliefs_with_name(fireLocation)) at: location color:#white ;
-	}
-}
-
-species drone skills: [moving] control: simple_bdi{
-	float waterValue;
-	grille place <- one_of(grille);	
-	
-	//here we consider that drone will have no water until they find a fire, for speed and energy issues
-	//todo slow down drone when it has watervalue > 0
-	//add battery value
-	init {
-		waterValue <-0.0;
-		location<-place.location;
-		do add_desire(patrol_desire);
-	}
-	
-	//functions that updates drone beliefs, linked to water needs
-	perceive target:self {
-		if(waterValue>0){
-			do add_belief(has_water);
-			do remove_belief(needs_water);
-		}
-		if(waterValue<=0 and fireLocation){
-			do add_belief(needs_water);
-			do remove_belief(has_water);
-		}
-	}
-	
-	
-	//functions that perceive fires
-	//todo: prevent drone from getting water if 
-	perceive target:fireArea where place.can_burn in: 15{ 
-		if (fireArea != nil){
-			focus id:fireLocation var:location strength:10.0; 
-			ask myself{
-				do remove_intention(patrol_desire, true);
-				do add_desire(predicate:share_information);
-				//drones in this simulation are only 'eyes' for the trucks
-				
-				}	 
-		}		
-	}
-	
-	
-	
-	//Drones like each other no matter what
-	perceive target: drone in: communication_dist {
-    	socialize liking: 1;
-    }
-    
-    //Drones like truck no matter what
-	perceive target: truck in: communication_dist {
-    	socialize liking: 1;
-    }
-	
-	plan patrolling intention:patrol_desire{
-		do wander amplitude: 10.0 speed: empty_drone_speed;
-	}
-	
-	
-	//The plan that is executed when the agent got the intention of extinguish a fire.
-//	plan stopFire intention: fire_location priority:5{
-//	point target_fire <- point(get_predicate(get_current_intention()).values["location_value"]);
-//		if(waterValue>0){
-//			fireArea current_fire <- fireArea first_with (each.location = target_fire);
-//			if (current_fire != nil){
-//				if (self distance_to target_fire <= 1) {
-//					waterValue <- waterValue - 1.0;
-//					 current_fire.size <-  current_fire.size - 1;
-//					 if ( current_fire.size <= 0) {
-//						ask  current_fire {
-//							current_fire.place.can_burn <- false;
-//							do die;
-//						}
-//						do remove_belief(get_predicate(get_current_intention()));
-//						do remove_intention(get_predicate(get_current_intention()), true);
-//						if (length(get_beliefs_with_name(fireLocation)) <= 0){
-//							do add_desire(patrol_desire,1.0);
-//						}
-//					}
-//					}else {
-//						do goto(target: target_fire, speed:full_drone_speed);
-//					}
-//				}else{
-//					do remove_belief(get_predicate(get_current_intention()));
-//					do remove_intention(get_predicate(get_current_intention()), true);
-//					if (length(get_beliefs_with_name(fireLocation)) <= 0){
-//							do add_desire(patrol_desire,1.0);
-//					}
-//				}
-//			
-//			
-//		} else {
-//			do add_subintention(get_current_intention(),has_water,true);
-//			do current_intention_on_hold();
-//		}
-//	}  
-	
-	//The plan to take water when the agent get the desire of water.
-    plan gotoTakeWater intention: has_water priority:2 {
-    	waterArea wa <- first(waterArea);
-    	list<grille> voisins <-  (grille(location) neighbors_at (1)) + grille(location);
-			path cheminSuivi <-  goto(target: wa, speed: empty_drone_speed) ;
-    	if (self distance_to wa <= 1) {
-    		waterValue <- waterValue + 2.0;
-		}
-    }
-     
-    //list all the drones in the simulation (we consider that they are all interconnected)   
-    list<truck> my_friends;
-    
-    //the plan that share the location of a fire to trucks when found by a drone
     plan share_information_to_friends intention: share_information priority:1 instantaneous: true{    
-    	my_friends <- list<truck>((social_link_base where (each.liking > 0)) collect each.agent);
+    	my_friends <- list<drone>((social_link_base where (each.liking > 0)) collect each.agent);
     	loop known_fire_at_location over: get_beliefs_with_name(fireLocation) {
         	ask my_friends {
-        		//do remove_intention(patrol_desire, true);
+        		do remove_intention(patrol_desire, true);
         		do add_directly_belief(known_fire_at_location);	
-        		do add_intention(fire_location);
         	}        		
        
     	}
     		do remove_intention(share_information, true); 
-    		do add_desire(patrol_desire);
     }
 
 	
@@ -316,7 +180,7 @@ species fireArea control:simple_bdi{
     }
     
 	reflex burn when: place.pv > 0 { 
-		//TO DO : add fire intensity 	
+		//TO DO : add fire intensity
     	place.pv <- place.pv - 0.005 ;
     }
     
@@ -350,7 +214,7 @@ species waterArea{
 		location <- place.location;
 	}
 	aspect base {
-	  draw square(5) color: #blue border: #black;		
+	  draw square(1) color: #blue border: #black;		
 	}
 }
 
@@ -370,7 +234,6 @@ experiment FireWatch type: gui {
 			species waterArea aspect:base;
 			species fireArea aspect:base;
 			species drone aspect:base;
-			species truck aspect:base;
 		}
 	}
 }
