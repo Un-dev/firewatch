@@ -348,7 +348,7 @@ species waterArea{
 		location <- place.location;
 	}
 	aspect base {
-	  draw square(5) color: #blue border: #black;		
+	  draw square(1) color: #blue border: #black;		
 	}
 }
 

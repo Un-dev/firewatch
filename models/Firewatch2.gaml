@@ -6,7 +6,7 @@
 */
 
 
-model NewModel
+model Firewatch2
 
 global {
 	int displatTextSize <-4;
@@ -30,7 +30,7 @@ global {
 	init {
 		create fireArea number:1;
 		create waterArea number:1;
-		create drone number: 5;
+		create drone number: 3;
 	}
 	//stops simulation when all fires are extinguished
 	reflex stop when: length(fireArea) = 0 {
@@ -180,7 +180,7 @@ species fireArea control:simple_bdi{
     }
     
 	reflex burn when: place.pv > 0 { 
-		//TO DO : add fire intensity 	
+		//TO DO : add fire intensity
     	place.pv <- place.pv - 0.005 ;
     }
     
@@ -214,7 +214,7 @@ species waterArea{
 		location <- place.location;
 	}
 	aspect base {
-	  draw square(5) color: #blue border: #black;		
+	  draw square(1) color: #blue border: #black;		
 	}
 }
 
