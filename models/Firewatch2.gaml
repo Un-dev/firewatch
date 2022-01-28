@@ -30,7 +30,11 @@ global {
 	init {
 		create fireArea number:1;
 		create waterArea number:1;
+<<<<<<< Updated upstream:models/Firewatch2.gaml
 		create drone number: 3;
+=======
+		create drone number: 0;
+>>>>>>> Stashed changes:models/New Model.gaml
 	}
 	//stops simulation when all fires are extinguished
 	reflex stop when: length(fireArea) = 0 {
@@ -214,7 +218,11 @@ species waterArea{
 		location <- place.location;
 	}
 	aspect base {
+<<<<<<< Updated upstream:models/Firewatch2.gaml
 	  draw square(1) color: #blue border: #black;		
+=======
+	  draw square(2) color: #blue border: #black;		
+>>>>>>> Stashed changes:models/New Model.gaml
 	}
 }
 

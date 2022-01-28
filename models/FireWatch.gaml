@@ -199,9 +199,10 @@ species drone skills: [moving] control: simple_bdi{
 		if (fireArea != nil){
 			focus id:fireLocation var:location strength:10.0; 
 			ask myself{
+				do remove_intention(patrol_desire, true);
 				do add_desire(predicate:share_information);
 				//drones in this simulation are only 'eyes' for the trucks
-				do remove_intention(patrol_desire, true);
+				
 				}	 
 		}		
 	}
@@ -286,6 +287,7 @@ species drone skills: [moving] control: simple_bdi{
        
     	}
     		do remove_intention(share_information, true); 
+    		do add_desire(patrol_desire);
     }
 
 	
@@ -348,7 +350,7 @@ species waterArea{
 		location <- place.location;
 	}
 	aspect base {
-	  draw square(1) color: #blue border: #black;		
+	  draw square(5) color: #blue border: #black;		
 	}
 }
 
